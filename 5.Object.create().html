@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+
+    <script>
+        var Obj = {
+            a: 1,
+            b: 2
+        }
+        var a = Object.create(null)
+        a = 5 // 重新赋值，会改变类型
+        var b = Object.create(Obj)
+        b.c = 6
+        console.log(a, a.__proto__) // {} undefined
+        console.log(b, b.__proto__, b.c, b.a) // {} {a: 1, b: 2} 6 1
+
+        // Object.create() -> 将 参数对象 作为一个 新创建的空对象 的原型，并返回 这个空对象
+
+        // 简略版
+        function MyCreate(obj) {
+            // 新声明一个函数
+            function C() {}
+            // 将函数的原型指向obj
+            C.prototype = obj
+            // 返回这个函数的实例化对象
+            return new C()
+        }
+        var c = Object.create(Obj)
+        c.c = 6
+        console.log(c, c.__proto__, c.c, c.a)
+
+        // 官方版polyfill
+        if (typeof Object.create !== 'function') {
+            Object.create = function (proto, propertiesObject) {
+                if (typeof oroto !== 'object' && typeof proto !== 'function') {
+                    throw new TypeError('Object prototype may only be an Object: ' + proto)
+                } else if (proto === null) {
+                    throw new Error("This browser's implementation of Object.create is a shim and doesn't support 'null' as the first argument.")
+                }
+
+                if (typeof propertiesObject !== 'undefined') {
+                    throw new Error("This browser's implementation of Object.create is a shim and doesn't support a second argument.")
+                }
+
+                // 简化版
+                function F() {}
+                F.prototype = proto
+                return new F()
+            }
+        }
+    </script>
+</body>
+</html>

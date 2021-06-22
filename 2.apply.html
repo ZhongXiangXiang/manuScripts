@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+        var a = 1
+        var obj1 = {
+            a: 22
+        }
+        var obj = {
+            a: 2,
+            c: 3,
+            d:function() {
+                console.log(this.a, this)
+            }
+        }
+        function fn() {
+            var a = 4
+            console.log(this.a, this, a)
+        }
+        fn()
+        fn.apply(obj)
+        obj.d()
+        obj.d.apply(obj1)
+        obj.d.apply(null)
+
+        console.log('-------------------------------------------------')
+        Function.prototype.myApply = function(context, args = []) { // 第二个参数为数组/类数组
+            let ctx = context || window
+            let func = Symbol()
+            ctx[func] = this
+            const res = args.length > 0 ? ctx[func](...args) : ctx[func]()
+            delete ctx[func]
+            return res
+        }
+
+        fn.myApply(obj)
+        obj.d()
+        obj.d.myApply(obj1)
+        obj.d.myApply(null)
+    </script>
+</body>
+</html>

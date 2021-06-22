@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+
+    <script>
+        var arr = [1,2]
+        console.log(arr instanceof Array)
+
+        function myInstanceOf(left, right) {
+            let proto = Object.getPrototypeOf(left), // 或left.__proto__, 获取对象的原型
+            prototype = right.prototype // 获取构造函数的prototype对象
+            // 判断构造函数的prototype对象是否在对象的原型链上
+            while (true) {
+                if(!proto) return false
+                if (proto === prototype) return true
+                proto = Object.getPrototypeOf(proto)
+            }
+        }
+        // 不能检测基本数据类型，在原型链上的结果未必准确，不能检测null, undefined
+
+        console.log(myInstanceOf(arr, Array))
+    </script>
+</body>
+</html>

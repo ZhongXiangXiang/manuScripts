@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+        class MyPromise {
+            callbacks = []
+            state = 'pending'
+            value = null // 保存结果
+            constructor(fn) {
+                fn(this._resolve.bind(this), this._reject.bind(this))
+            }
+
+            then(onFulfilled, onRejected) {
+                return new MyPromise((resolve, reject) => {
+                    this._handle({
+                        onFulfilled: onFulfilled || null,
+                        onRejected: onRejected || null,
+                        resolve: resolve,
+                        reject: reject
+                    })
+                })
+            }
+            _handle(callback) {
+                if (this.state === 'pending') { // resolve出去的是promise，此时为pending，callback被push到调用栈
+                    this.callbacks.push(callback)
+                    return
+                }
+
+                let cb = this.state === 'fulfilled' ? callback.onFulfilled : callback.onRejected
+
+                if (!cb) { // 若then中没传递任何东西
+                    cb = this.state = 'fulfilled' ? callback.resolve : callback.reject
+                    cb(this.value)
+                    return
+                }
+
+                let ret = cb(this.value)
+                cb = this.state === 'fulfilled' ? callback.resolve : callback.reject
+                cb(ret)
+            }
+            _resolve(value) {
+                if (value && (typeof value === 'object' || typeof value === 'function')) {
+                    var then = value.then
+                    if (typeof then === 'function') { // resolve的value是一个promise
+                        then.call(value, this._resolve.bind(this), this._reject.bind(this))
+                        return
+                    }
+                }
+
+                this.state = 'fulfilled' // 改状态
+                this.value = value // 保存结果
+                this.callbacks.forEach(cb => this._handle(cb))
+            }
+            _reject(error) {
+                this.state = 'rejected'
+                this.value = error
+                this.callbacks.forEach(cb => this._handle(cb))
+            }
+        }
+
+        new MyPromise((resolve, reject) => {
+            const p = new MyPromise(() => {})
+            setTimeout(() => {
+                resolve(11)
+            }, 1000)
+            console.log(111)
+        }).then(res => {
+            console.log(res)
+        })
+
+        new Promise((resolve, reject) => {
+            const p = new Promise(() => {})
+            setTimeout(() => {
+                resolve(12)
+            }, 100)
+            console.log(555)
+        }).then(res => {
+            console.log(res)
+        })
+    </script>
+</body>
+</html>

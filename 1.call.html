@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+        var a = 1
+        var obj1 = {
+            a: 22
+        }
+        var obj = {
+            a: 2,
+            c: 3,
+            d:function() {
+                console.log(this.a, this)
+            }
+        }
+        function fn() {
+            var a = 4
+            console.log(this.a, this, a)
+        }
+        fn()
+        fn.call(obj)
+        obj.d()
+        obj.d.call(obj1)
+        obj.d.call(null) // null/undefined, this指向window
+        console.log(999, window.a, this.a)
+        
+        console.log('-------------------------------------------------')
+        Function.prototype.myCall = function(context, ...args) {
+            let ctx = context || window
+            let func = Symbol() // 避免与上下文context属性发生冲突
+            console.log('this..', this)
+            ctx[func] = this // 这里的this的调用myCall的函数，即要绑定this指向的函数本身。fn.call(obj) -> this是fn
+            args = args ? args : []
+            // 以对象调用形式调用func，此时this指向ctx
+            const res = args.length > 0 ? ctx[func](...args) : ctx[func]()
+            // 删除该方法，不然会对传入对象ctx造成污染（添加了该方法）
+            delete ctx[func]
+            return res
+        }
+        
+        fn.myCall(obj)
+        obj.d()
+        obj.d.myCall(obj1)
+        obj.d.myCall(null)
+    </script>
+</body>
+</html>

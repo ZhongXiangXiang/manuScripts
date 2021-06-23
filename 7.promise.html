@@ -21,7 +21,10 @@
 
             then(onFulfilled, onRejected) {
                 // 3. 执行then 函数
-                console.log('then....')
+                if (this.state === 'rejected') {
+                    return
+                }
+                console.log('then....', this.state)
                 return new MyPromise((resolve, reject) => { // 返回promise，可链式调用then
                     console.log('this._handle..')
                     this._handle({
@@ -32,9 +35,25 @@
                     })
                 })
             }
+            catch(onRejected) {
+                // 3. 执行then 函数
+                if (this.state === 'fulfilled') {
+                    return
+                }
+                console.log('catch....', this.state)
+                return new MyPromise((resolve, reject) => { // 返回promise，可链式调用then
+                    console.log('this._handle..')
+                    this._handle({
+                        onFulfilled: null,
+                        onRejected: onRejected || null,
+                        resolve: resolve,
+                        reject: reject
+                    })
+                })
+            }
             _handle(callback) {
                 // 4. 
-                if (this.state === 'pending') { // 异步还未resolve或resolve的是promise，此时为pending，callback被push到调用栈
+                if (this.state === 'pending') { // 异步还未resolve或resolve的是promise，此时为pending，then中的callback被push到调用栈（任务队列）等待执行
                     console.log('push...')
                     this.callbacks.push(callback)
                     return
@@ -48,11 +67,12 @@
                     return
                 }
 
-                let ret = cb(this.value) // 4-1. 执行then中的回调
+                let ret = cb(this.value) // 4-1. 执行then中的回调，onFulfilled或onRejected
 
                 console.log('then onFulfilled后ret...', ret)
-                cb = this.state === 'fulfilled' ? callback.resolve : callback.reject
-                cb(ret) // 4-2. 若then中回调有return返回值，再次resolve出去
+                // cb = this.state === 'fulfilled' ? callback.resolve : callback.reject
+                cb =  callback.resolve
+                cb(ret) // 4-2. 若then/catch中回调有return返回值，再次resolve出去
             }
             _resolve(value) {
                 // 2. resolve
@@ -72,6 +92,7 @@
                 this.callbacks.forEach(cb => this._handle(cb))
             }
             _reject(error) {
+                console.log('_reject error...', error)
                 this.state = 'rejected'
                 this.value = error
                 this.callbacks.forEach(cb => this._handle(cb))
@@ -95,28 +116,100 @@
         //     console.log(res)
         // })
 
-        new MyPromise((resolve, reject) => {
-            const p = new MyPromise((resolve, reject) => {
-                resolve(33, 'new promise..')
-            })
-            setTimeout(() => { // setTimeout异步，放入任务队列。此时还未resolve, state是pending
-                console.log('settimeout..')
-                resolve(p)
-            }, 1000)
-            console.log(111)
-        }).then(res => { // then直接同步执行了
-            console.log(res)
-        })
+        // new MyPromise((resolve, reject) => {
+        //     const p = new MyPromise((resolve, reject) => {
+        //         resolve(33)
+        //     })
+        //     setTimeout(() => { // setTimeout异步，放入任务队列。此时还未resolve, state是pending
+        //         console.log('settimeout..')
+        //         // resolve(p)
+        //         // resolve(22)
+        //         reject(244)
+        //     }, 1000)
+        //     console.log(111)
+        // }).then(res => { // then直接同步执行了
+        //     console.log('res..', res)
+        // }).catch(err => {
+        //     console.log('err....', err)
+        // })
 
         // new Promise((resolve, reject) => {
         //     const p = new Promise(() => {})
         //     setTimeout(() => {
-        //         resolve(12)
+        //         // resolve(12)
+        //         reject(44)
         //     }, 100)
         //     console.log(555)
         // }).then(res => {
-        //     console.log(res)
+        //     console.log('res..', res)
+        // }).catch(err => {
+        //     console.log('err....', err)
+        //     return 66
+        // }).then(res2 => {
+        //     console.log('res2...', res2)
         // })
+
+
+        MyPromise.resolve = (value) => {
+            if (value && value instanceof MyPromise) { // 传入的值本身是promise，直接return
+                return value
+            } else if (value && typeof value === 'object' && typeof value.then === 'function') {
+                let then = value.then
+                return new MyPromise(resolve => {
+                    then(resolve)
+                })
+            } else if (value) { // 其他任何值 转为 值是value，状态是fulfilled的promise
+                return new MyPromise(resolve => resolve(value))
+            } else {
+                return new MyPromise(resolve => resolve())
+            }
+        }
+        // const p = new MyPromise((resolve, reject) => {
+        //         resolve(44)
+        //     })
+        // let mp = MyPromise.resolve(88).then(res => {
+        //     console.log('mp..', res)
+        // })
+        // console.log('mp,,,', mp)
+
+        MyPromise.reject = (reason) => {
+            // 会将任何值（包括promise对象）实例化为一个rejected状态的promise
+            return new MyPromise((resolve, reject) => reject(reason))
+        }
+        // MyPromise.reject(55).catch(err => {
+        //     console.log('err...', err)
+        // })
+
+
+        MyPromise.all = (promiseArr) => {
+            let index = 0, result = []
+            return new MyPromise((resolve, reject) => {
+                promiseArr.forEach((p, i) => {
+                    MyPromise.resolve(p).then(val => {
+                        index++
+                        result[i] = val
+                        if (index === promiseArr.length) {
+                            resolve(result)
+                        }
+                    }, err => {
+                        reject(err) // 有一个promise是rejected，返回第一个rejected的promise的值
+                    })
+                })
+            })
+        }
+
+        // 返回第一个fulfilled或rejected的promise的实例包装后的新实例
+        MyPromise.race = (promiseArr) => {
+            return new MyPromise((resolve, reject) => {
+                promiseArr.forEach(p => {
+                    MyPromise.resolve(p).then(val => {
+                        resolve(val)
+                    }, err => {
+                        reject(err)
+                    })
+                })
+            })
+        }
     </script>
 </body>
 </html>

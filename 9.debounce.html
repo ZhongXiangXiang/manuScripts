@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+        // 防抖
+        // 在最后一次执行，场景：输入框匹配
+        let debounce = (fn, time = 1000) => {
+            let timeLock = null
+
+            return function(...args) {
+                clearTimeout(timeLock)
+                timeLock = setTimeout(() => {
+                    fn(...args)
+                }, time)
+            }
+        }
+    </script>
+</body>
+</html>

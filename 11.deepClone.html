@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+        // 深拷贝
+        function deepClone(obj, hash = new WeakMap()) {
+            // 如果是正则和日期，返回新对象
+            if (obj instanceof RegExp) return new RegExp(obj)
+            if (obj instanceof Date) return new Date(obj)
+
+            // 空或非对象类型，返回原值
+            if (obj === null && typeof obj !== 'object') return obj
+
+            // 循环引用，若hash中有，直接返回hash中的值
+            if (hash.has(obj)) {
+                return hash.get(obj)
+            }
+            // new 一个相应的对象
+            // obj为Array, 相当于new Array()
+            // obj为Object, 相当于new Object()
+            let constr = new obj.constructor() // []/{}
+            hash.set(obj, constr)
+            for (let key in obj) { // for in 包含原型链上的属性
+                if (obj.hasOwnProperty(key)) {
+                    constr[key] = deepClone(obj[key], hash)
+                }
+            }
+
+            // 属性为symbol的情形
+            let symbolObj = Object.getOwnPropertySymbols(obj) // 得到obj属性为Symbol的属性，for in 循环，不会遍历symbol属性
+            symbolObj.forEach(s => {
+                if (obj.hasOwnProperty(s)) {
+                    constr[s] = deepClone(obj[s], hash)
+                }
+            })
+
+            return constr
+        }
+    </script>
+</body>
+</html>

@@ -14,11 +14,16 @@
             state = 'pending'
             value = null // 保存结果
             constructor(fn) {
+                // 1. 执行promise中传入的函数参数 (resolve, reject) => {}
+                console.log('mypromise...', this)
                 fn(this._resolve.bind(this), this._reject.bind(this))
             }
 
             then(onFulfilled, onRejected) {
-                return new MyPromise((resolve, reject) => {
+                // 3. 执行then 函数
+                console.log('then....')
+                return new MyPromise((resolve, reject) => { // 返回promise，可链式调用then
+                    console.log('this._handle..')
                     this._handle({
                         onFulfilled: onFulfilled || null,
                         onRejected: onRejected || null,
@@ -28,11 +33,13 @@
                 })
             }
             _handle(callback) {
-                if (this.state === 'pending') { // resolve出去的是promise，此时为pending，callback被push到调用栈
+                // 4. 
+                if (this.state === 'pending') { // 异步还未resolve或resolve的是promise，此时为pending，callback被push到调用栈
+                    console.log('push...')
                     this.callbacks.push(callback)
                     return
                 }
-
+                console.log('_handle...', callback)
                 let cb = this.state === 'fulfilled' ? callback.onFulfilled : callback.onRejected
 
                 if (!cb) { // 若then中没传递任何东西
@@ -41,14 +48,19 @@
                     return
                 }
 
-                let ret = cb(this.value)
+                let ret = cb(this.value) // 4-1. 执行then中的回调
+
+                console.log('then onFulfilled后ret...', ret)
                 cb = this.state === 'fulfilled' ? callback.resolve : callback.reject
-                cb(ret)
+                cb(ret) // 4-2. 若then中回调有return返回值，再次resolve出去
             }
             _resolve(value) {
+                // 2. resolve
+                console.log('_resolve value...', value)
                 if (value && (typeof value === 'object' || typeof value === 'function')) {
                     var then = value.then
                     if (typeof then === 'function') { // resolve的value是一个promise
+                        console.log(4444)
                         then.call(value, this._resolve.bind(this), this._reject.bind(this))
                         return
                     }
@@ -56,6 +68,7 @@
 
                 this.state = 'fulfilled' // 改状态
                 this.value = value // 保存结果
+                console.log('callbacks..', this.callbacks)
                 this.callbacks.forEach(cb => this._handle(cb))
             }
             _reject(error) {
@@ -65,25 +78,45 @@
             }
         }
 
+        // new MyPromise((resolve, reject) => {
+        //         resolve(11)
+        //     console.log(111)
+        // }).then(res => { // then直接同步执行了
+        //     console.log(res)
+        //     return 22
+        // }).then(r => {
+        //     console.log('r..', r)
+        // })
+
+        // new Promise((resolve, reject) => {
+        //         resolve(11)
+        //     console.log(111)
+        // }).then(res => { // then直接同步执行了
+        //     console.log(res)
+        // })
+
         new MyPromise((resolve, reject) => {
-            const p = new MyPromise(() => {})
-            setTimeout(() => {
-                resolve(11)
+            const p = new MyPromise((resolve, reject) => {
+                resolve(33, 'new promise..')
+            })
+            setTimeout(() => { // setTimeout异步，放入任务队列。此时还未resolve, state是pending
+                console.log('settimeout..')
+                resolve(p)
             }, 1000)
             console.log(111)
-        }).then(res => {
+        }).then(res => { // then直接同步执行了
             console.log(res)
         })
 
-        new Promise((resolve, reject) => {
-            const p = new Promise(() => {})
-            setTimeout(() => {
-                resolve(12)
-            }, 100)
-            console.log(555)
-        }).then(res => {
-            console.log(res)
-        })
+        // new Promise((resolve, reject) => {
+        //     const p = new Promise(() => {})
+        //     setTimeout(() => {
+        //         resolve(12)
+        //     }, 100)
+        //     console.log(555)
+        // }).then(res => {
+        //     console.log(res)
+        // })
     </script>
 </body>
 </html>

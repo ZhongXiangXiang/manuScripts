@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+    <script>
+        // 函数柯里化：一种将使用多个参数的一个函数，转换成一系列使用一个参数的函数的技术。
+        // 即，把一个多参数的函数，转化为单参数函数
+        // 目的-> 减少代码冗余，增加代码的可读性
+
+        function curry(fn, currArgs) {
+            return function() {
+                let args = [].slice.call(arguments) // 将 arguments 数组化
+
+                // 递归第一个，若未提供第二个参数currArgs，不用进行args的拼接
+                if (currArgs !== undefined) {
+                    args = args.concat(currArgs)
+                }
+
+                // 递归调用
+                if (args.length < fn.length) { // args的个数，等于fn的参数个数时，就可以把参数都传给fn，进行输出；否则，继续递归调用，直到两者相等
+                    return curry(fn, args)
+                }
+
+                // 递归出口
+                return fn.apply(null, args)
+            }
+
+            function sum(a, b, c) {
+                console.log(a + b + c);
+            }
+
+            const fn = curry(sum);
+
+            fn(1, 2, 3); // 6
+            fn(1, 2)(3); // 6
+            fn(1)(2, 3); // 6
+            fn(1)(2)(3); // 6 参数拼接，直到等于fn的参数个数，调用fn
+        }
+    </script>
+</body>
+</html>

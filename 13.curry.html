@@ -30,18 +30,18 @@
                 // 递归出口
                 return fn.apply(null, args)
             }
-
-            function sum(a, b, c) {
-                console.log(a + b + c);
-            }
-
-            const fn = curry(sum);
-
-            fn(1, 2, 3); // 6
-            fn(1, 2)(3); // 6
-            fn(1)(2, 3); // 6
-            fn(1)(2)(3); // 6 参数拼接，直到等于fn的参数个数，调用fn
         }
+
+        function sum(a, b, c) {
+            console.log(a + b + c);
+        }
+
+        const fn = curry(sum);
+
+        fn(1, 2, 3); // 6
+        fn(1, 2)(3); // 6
+        fn(1)(2, 3); // 6
+        fn(1)(2)(3); // 6 参数拼接，直到等于fn的参数个数，调用fn
     </script>
 </body>
 </html>

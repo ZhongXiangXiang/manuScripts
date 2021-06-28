@@ -19,7 +19,7 @@
                 fn(this._resolve.bind(this), this._reject.bind(this))
             }
 
-            then(onFulfilled, onRejected) {
+            then(onFulfilled, onRejected) { // then方法，用来添加回调函数。onFulfilled->异步操作成功时的回调， onRejected->异步操作失败时的回调
                 // 3. 执行then 函数
                 if (this.state === 'rejected') {
                     return
@@ -28,7 +28,7 @@
                 return new MyPromise((resolve, reject) => { // 返回promise，可链式调用then
                     console.log('this._handle..')
                     this._handle({
-                        onFulfilled: onFulfilled || null,
+                        onFulfilled: onFulfilled || null, // then的回调函数是异步任务
                         onRejected: onRejected || null,
                         resolve: resolve,
                         reject: reject
@@ -53,30 +53,35 @@
             }
             _handle(callback) {
                 // 4. 
-                if (this.state === 'pending') { // 异步还未resolve或resolve的是promise，此时为pending，then中的callback被push到调用栈（任务队列）等待执行
-                    console.log('push...')
-                    this.callbacks.push(callback)
-                    return
-                }
-                console.log('_handle...', callback)
-                let cb = this.state === 'fulfilled' ? callback.onFulfilled : callback.onRejected
+                setTimeout(() => {
+                    if (this.state === 'pending') { // 异步还未resolve或resolve的是promise，此时为pending，then中的callback被push到调用栈（任务队列）等待执行
+                        console.log('push...')
+                        this.callbacks.push(callback)
+                        return
+                    }
+                    console.log('_handle...', callback)
+                    let cb = this.state === 'fulfilled' ? callback.onFulfilled : callback.onRejected
 
-                if (!cb) { // 若then中没传递任何东西
-                    cb = this.state = 'fulfilled' ? callback.resolve : callback.reject
-                    cb(this.value)
-                    return
-                }
+                    if (!cb) { // 若then中没传递任何东西
+                        cb = this.state = 'fulfilled' ? callback.resolve : callback.reject
+                        cb(this.value)
+                        return
+                    }
 
-                let ret = cb(this.value) // 4-1. 执行then中的回调，onFulfilled或onRejected
+                    let ret = cb(this.value) // 4-1. 执行then中的回调，onFulfilled或onRejected
 
-                console.log('then onFulfilled后ret...', ret)
-                // cb = this.state === 'fulfilled' ? callback.resolve : callback.reject
-                cb =  callback.resolve
-                cb(ret) // 4-2. 若then/catch中回调有return返回值，再次resolve出去
+                    console.log('then onFulfilled后ret...', ret)
+                    // cb = this.state === 'fulfilled' ? callback.resolve : callback.reject
+                    cb =  callback.resolve
+                    cb(ret) // 4-2. 若then/catch中回调有return返回值，再次resolve出去
+                })
             }
             _resolve(value) {
                 // 2. resolve
-                console.log('_resolve value...', value)
+                console.log('_resolve value...', value, this.state)
+                if (this.state !== 'pending') {
+                    return
+                }
                 if (value && (typeof value === 'object' || typeof value === 'function')) {
                     var then = value.then
                     if (typeof then === 'function') { // resolve的value是一个promise
@@ -93,28 +98,37 @@
             }
             _reject(error) {
                 console.log('_reject error...', error)
+                if (this.state !== 'pending') {
+                    return
+                }
                 this.state = 'rejected'
                 this.value = error
                 this.callbacks.forEach(cb => this._handle(cb))
             }
         }
 
-        // new MyPromise((resolve, reject) => {
-        //         resolve(11)
-        //     console.log(111)
-        // }).then(res => { // then直接同步执行了
-        //     console.log(res)
-        //     return 22
-        // }).then(r => {
-        //     console.log('r..', r)
-        // })
+        new MyPromise((resolve, reject) => {
+                resolve(11)
+            console.log(111)
+            resolve(44)
+            console.log(222)
+        }).then(res => { // then直接同步执行了
+            console.log(res)
+            return 22
+        }).then(r => {
+            console.log('r..', r)
+        })
+        console.log(999999)
 
         // new Promise((resolve, reject) => {
         //         resolve(11)
         //     console.log(111)
+        //     resolve(44)
+        //     console.log(222)
         // }).then(res => { // then直接同步执行了
-        //     console.log(res)
+        //     console.log('r..', res)
         // })
+        // console.log(999999)
 
         // new MyPromise((resolve, reject) => {
         //     const p = new MyPromise((resolve, reject) => {

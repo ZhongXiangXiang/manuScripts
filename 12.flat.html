@@ -1,24 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
+
 <body>
-    
+
     <script>
         // 数组扁平化 falt
-        let arr = [1,2,[3,4,[5,[6]]]]
+        let arr = [1, 2, [3, 4, [5, [6]]]]
         console.log(arr.flat(Infinity)) // flat参数为指定要提取嵌套数组的结构深度，默认值为 1
 
         function myFlat(arr) {
             return arr.reduce((prev, cur) => {
+                console.log(11, prev, cur)
                 return prev.concat(Array.isArray(cur) ? myFlat(cur) : cur)
             }, [])
         }
         console.log(myFlat(arr))
     </script>
 </body>
+
 </html>

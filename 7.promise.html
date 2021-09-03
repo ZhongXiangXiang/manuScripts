@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
+
 <body>
-    
+
     <script>
         class MyPromise {
             callbacks = []
@@ -72,7 +74,7 @@
 
                     console.log('then onFulfilled后ret...', ret)
                     // cb = this.state === 'fulfilled' ? callback.resolve : callback.reject
-                    cb =  callback.resolve
+                    cb = callback.resolve
                     cb(ret) // 4-2. 若then/catch中回调有return返回值，再次resolve出去
                 })
             }
@@ -108,12 +110,12 @@
         }
 
         new MyPromise((resolve, reject) => {
-                resolve(11)
+            resolve(11)
             console.log(111)
             resolve(44)
             console.log(222)
         }).then(res => { // then直接同步执行了
-            console.log(res)
+            console.log('res1: ', res)
             return 22
         }).then(r => {
             console.log('r..', r)
@@ -226,4 +228,5 @@
         }
     </script>
 </body>
+
 </html>

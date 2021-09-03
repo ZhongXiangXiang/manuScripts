@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+</body>
+<script>
+    class MyPromise {
+        constructor(executor) {
+            this.status = 'pending' // 初始状态为pending
+            this.value = null
+            this.reason = null
+            this.fullfilledFunc = []
+            this.rejectedFunc = []
+            let _this = this // 防止this指向改变
+
+            const resolve = (value) => {
+                console.error(22222222, 'resolve')
+                if (this.status === 'pending') {
+                    this.status = 'fullfilled'
+                    this.value = value
+                    // this.fullfilledFunc.forEach(func => func())
+                    this.fullfilledFunc.forEach(func => func(_this.value))
+                }
+            }
+
+            const reject = (reason) => {
+                if (this.status === 'pending') {
+                    this.status = 'rejected'
+                    this.reason = reason
+                    this.rejectedFunc.forEach(func => func(_this.reason))
+                }
+            }
+
+            try {
+                executor(resolve, reject) // 立即执行
+            } catch (e) {
+                reject(e)
+            }
+        }
+
+        then(onFullfilled, onRejected) {
+            // 查看参数是否是function，不是，则让值继续往下传递，链式调用继续
+            onFullfilled = typeof onFullfilled === 'function' ? onFullfilled : value => value
+            onRejected = typeof onRejected === 'function' ? onRejected : reason => reason
+
+            // then返回一个新promise，这里先定义
+            let p = new MyPromise((resolve, reject) => {
+                console.error(11111111, 'then')
+                if (this.status === 'fullfilled') { //如果是fulfilled直接执行  即是同步
+                    // 异步, onFullfilled和onRejected才是异步的**********
+                    setTimeout(() => {
+                        let x = onFullfilled(this.value) // 执行then里的onFullfilled函数，给其传resolve出来的value值
+                        resolvePromise(p, x, resolve, reject) // 判断onFullfilled返回的东西，并resovle出去
+                    })
+                }
+
+                if (this.status === 'rejected') { //如果是rejected也直接执行  即是同步
+                    setTimeout(() => {
+                        let x = onRejected(this.reason) // 执行then里的onRejected函数，给其传reject出来的reason值
+                        resolvePromise(p, x, resolve, reject) // 判断onRejected返回的东西，并reject出去
+                    })
+                }
+
+                if (this.status === 'pending') {
+                    console.error(3333333, 'pending')
+                    // 这里是resove是异步执行时会到这一步，如：
+                    // setTimeout(() => { // 异步，这里是pending，将函数push到执行数组
+                    //     resolve() // 这里是fullfilled，执行数组里的函数（回调）
+                    // })
+                    this.fullfilledFunc.push(() => { // 将onFullfilled函数push到带完成的函数数组中带执行
+                        setTimeout(() => {
+                            let x = onFullfilled(this.value)
+                            resolvePromise(p, x, resolve, reject)
+                        })
+                    })
+                    this.rejectedFunc.push(() => {
+                        setTimeout(() => {
+                            let x = onRejected(this.reason)
+                            resolvePromise(p, x, resolve, reject)
+                        })
+                    })
+                }
+            })
+
+            const resolvePromise = (p, x, resolve, reject) => {
+                if (p === x) {
+                    console.error("不能resolve自己，这样会无限等待");
+                    return
+                }
+
+                if (typeof x === 'object' || typeof x === ' function') { // 判断return出来的x是否为promise
+                    let then = x.then
+                    try {
+                        if (typeof then === 'function') { // 递归判断return出来的是否为promise
+                            //如果直接 then() 需要 then.call(x);  否则then里面的this将指向undefined
+                            x.then(y => {
+                                resolvePromise(p, y, resolve, reject)
+                            }, e => {
+                                reject(e)
+                            })
+                        } else {
+                            resolve(x)
+                        }
+                    } catch (e) {
+                        reject(e)
+                    }
+                } else {
+                    resolve(x) // 不是promise，直接resolve出去
+                }
+            }
+
+            return p // 将promise，return出去
+        }
+
+        catch(fn) {
+            return this.then(null, fn)
+        }
+
+        // promise的finally方法
+        finally(cb) {
+            return this.then(value => MyPromise.resolve(cb()).then(() => value), error => MyPromise.resolve(cb()).then(() => error))
+        }
+
+        // 静态resolve方法，也是返回一个promise
+        static resolve(value) {
+            return value instanceof MyPromise ? value : new MyPromise(resolve => resolve(value))
+        }
+
+        // 静态reject
+        static reject(error) {
+            return new MyPromise((resolve, reject) => reject(error))
+        }
+
+        // 静态all
+        static all(promiseArr) {
+            let count = 0
+            let result = []
+            return new MyPromise((resolve, reject) => {
+                if (!promiseArr.length) { // 空
+                    return resolve(result)
+                }
+                promiseArr.forEach((p, i) => { // 遍历执行promise，将结果放在result数组中
+                    MyPromise.resolve(p).then(value => {
+                        count++
+                        result[i] = value
+                        if (count === promiseArr.length) { // 最后，将结果数组resolve出去
+                            resolve(result)
+                        }
+                    }, error => {
+                        reject(error)
+                    })
+                })
+            })
+        }
+
+        // 静态race
+        static race(promiseArr) {
+            return new MyPromise((resolve, reject) => {
+                promiseArr.forEach(p => {
+                    MyPromise.resolve(p).then(value => { // 哪个先执行完，就resolve哪个
+                        resolve(value)
+                    }, error => {
+                        reject(error)
+                    })
+                })
+            })
+        }
+
+    }
+
+    var p = new MyPromise((resolve, reject) => {
+        console.log(1111111)
+        // resolve(2)
+        setTimeout(() => {
+            console.log(5555555)
+            resolve(2)
+        })
+        console.log(444444444)
+    }).then(res => {
+        console.log(222222222, res)
+    })
+    console.log(3333333)
+
+
+
+    const p1 = Promise.resolve(111)
+    const p2 = Promise.reject(new Error('fail'))
+    const p3 = Promise.reject(new Error('fail'))
+    const arr1 = [p1, p2, p3]
+
+    Promise.no = function (arr) {
+        return new Promise(function (resolve, reject) {
+            // 是否有返回resolve的
+            let count = 0
+            arr.forEach(ele => {
+                Promise.resolve(ele).then(() => { reject('reject') }).catch(() => {
+                    console.log('catch')
+                    count++
+                    console.log('catch', count)
+                    console.log(count, arr.length, count === arr.length)
+                    if (count === arr.length) {
+                        console.log('xiangdeng')
+                        resolve('11111')
+                    }
+                })
+            })
+            console.log(count)
+        })
+    }
+    Promise.no(arr1).then((res) => {
+        console.log('11res..', res)
+    }).catch(err => {
+        console.log('22err..', err)
+    })
+</script>
+
+</html>
